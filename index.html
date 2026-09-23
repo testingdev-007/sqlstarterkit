@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Order Up: A SQL Starter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    --bg:#f4ebd9;
+    --bg-soft:#eee1c9;
+    --surface:#fffaf0;
+    --ink:#2b1b12;
+    --ink-soft:#6b5443;
+    --line:rgba(43,27,18,0.14);
+    --accent:#b5650a;
+    --accent-ink:#3a2205;
+    --accent2:#276e52;
+    --accent2-ink:#0f2e22;
+    --accent3:#8c4566;
+    --accent3-ink:#3a1a2a;
+    --danger:#a5311f;
+    --good:#1f7a4d;
+    --term-bg:#181310;
+    --term-ink:#dcefe0;
+    --term-amber:#f0ad4e;
+    --font-display:'Fraunces', Georgia, serif;
+    --font-body:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:'JetBrains Mono', 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#171009;
+      --bg-soft:#1f1610;
+      --surface:#241a12;
+      --ink:#f1e6d6;
+      --ink-soft:#c7b39c;
+      --line:rgba(241,230,214,0.14);
+      --accent:#e8a33d;
+      --accent-ink:#2b1b0a;
+      --accent2:#6fd9a0;
+      --accent2-ink:#0c2118;
+      --accent3:#d98cb3;
+      --accent3-ink:#2b1420;
+      --danger:#f0836c;
+      --good:#7fe0ab;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#171009;
+    --bg-soft:#1f1610;
+    --surface:#241a12;
+    --ink:#f1e6d6;
+    --ink-soft:#c7b39c;
+    --line:rgba(241,230,214,0.14);
+    --accent:#e8a33d;
+    --accent-ink:#2b1b0a;
+    --accent2:#6fd9a0;
+    --accent2-ink:#0c2118;
+    --accent3:#d98cb3;
+    --accent3-ink:#2b1420;
+    --danger:#f0836c;
+    --good:#7fe0ab;
+  }
+  html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px));}
+  html,body{height:auto;}
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+  a{color:inherit;}
+  h1,h2,h3{font-family:var(--font-display); margin:0 0 .4em; font-weight:600; letter-spacing:-0.01em;}
+  h1{font-size:clamp(2.2rem,5vw,3.4rem); line-height:1.05;}
+  h2{font-size:clamp(1.6rem,3.4vw,2.2rem); line-height:1.12;}
+  h3{font-size:1.22rem; line-height:1.3;}
+  p{margin:0 0 1em; color:var(--ink);}
+  .measure{max-width:62ch;}
+  code, pre, .mono{font-family:var(--font-mono);}
+
+  /* ---------- top nav ---------- */
+  .topnav{
+    position:sticky; top:0; z-index:40;
+    padding-top:env(safe-area-inset-top,0px);
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .topnav-inner{
+    max-width:1080px; margin:0 auto;
+    display:flex; align-items:center; gap:1rem;
+    padding:.7rem 1.1rem;
+  }
+  .brand{font-family:var(--font-display); font-weight:600; font-size:1.05rem; white-space:nowrap; display:flex; align-items:center; gap:.4rem;}
+  .brand-mark{font-size:1.15rem;}
+  .nav-links{
+    display:flex; gap:.3rem; overflow-x:auto; scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+  .nav-links::-webkit-scrollbar{display:none;}
+  .nav-links button{
+    text-decoration:none; font-size:.92rem; font-weight:500; font-family:var(--font-body);
+    padding:.42rem .75rem; border-radius:999px; white-space:nowrap;
+    color:var(--ink-soft); transition:color .15s, background .15s;
+    background:transparent; border:none; cursor:pointer;
+  }
+  .nav-links button:hover{color:var(--ink);}
+  .nav-links button.active{background:var(--surface); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line);}
+  .nav-links button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  main{max-width:1080px; margin:0 auto; padding:0 1.1rem;}
+  .tab-panel{display:none; padding:2.6rem 0 3.6rem;}
+  .tab-panel.active{display:block;}
+  .chapter-kicker{
+    display:inline-block; font-family:var(--font-mono); font-size:.78rem;
+    color:var(--chapter-ink); background:var(--chapter-bg);
+    padding:.2rem .55rem; border-radius:5px; margin-bottom:.9rem;
+  }
+  .chapter-basics{--chapter-bg:color-mix(in srgb, var(--accent) 16%, transparent); --chapter-ink:var(--accent);}
+  .chapter-numbers{--chapter-bg:color-mix(in srgb, var(--accent2) 18%, transparent); --chapter-ink:var(--accent2);}
+  .chapter-joins{--chapter-bg:color-mix(in srgb, var(--accent3) 18%, transparent); --chapter-ink:var(--accent3);}
+
+  /* ---------- welcome ---------- */
+  .hero-sub{font-size:1.12rem; color:var(--ink-soft); max-width:56ch;}
+  .schema-tour{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin-top:1.6rem;}
+  .schema-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:1rem 1.1rem 1.1rem;
+  }
+  .schema-card h4{font-family:var(--font-mono); font-size:1rem; margin:0 0 .15rem; color:var(--ink);}
+  .schema-card .schema-purpose{font-size:.88rem; color:var(--ink-soft); margin-bottom:.7rem;}
+  .schema-card table{width:100%; border-collapse:collapse; font-size:.82rem;}
+  .schema-card th, .schema-card td{
+    text-align:left; padding:.32rem .4rem; border-bottom:1px solid var(--line);
+    font-family:var(--font-mono); white-space:nowrap;
+  }
+  .schema-card th{color:var(--ink-soft); font-weight:500;}
+
+  .anatomy{
+    margin-top:1.8rem; background:var(--surface); border:1px solid var(--line);
+    border-radius:10px; padding:1.3rem 1.3rem 1.6rem; overflow-x:auto;
+  }
+  .anatomy-query{font-family:var(--font-mono); font-size:1rem; white-space:pre; margin-bottom:1rem;}
+  .anatomy-query .clause{padding:.05rem .12rem; border-radius:3px;}
+  .c-select{background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent-ink);}
+  .c-from{background:color-mix(in srgb, var(--accent2) 24%, transparent); color:var(--accent2-ink);}
+  .c-where{background:color-mix(in srgb, var(--accent3) 24%, transparent); color:var(--accent3-ink);}
+  .c-order{background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent-ink);}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .c-select, :root:not([data-theme="light"]) .c-order{color:var(--ink);} }
+  :root[data-theme="dark"] .c-select, :root[data-theme="dark"] .c-order{color:var(--ink);}
+  .anatomy-legend{display:flex; flex-wrap:wrap; gap:.6rem 1.3rem; font-size:.86rem; color:var(--ink-soft);}
+  .anatomy-legend span.dot{display:inline-block; width:.62em; height:.62em; border-radius:2px; margin-right:.4em;}
+
+  /* ---------- lesson cards ---------- */
+  .lesson-grid{display:flex; flex-direction:column; gap:1.1rem; margin-top:1.6rem;}
+  .lesson-card{
+    background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--chapter-ink);
+    border-radius:8px; padding:1.2rem 1.3rem 1.3rem;
+  }
+  .lesson-card .blurb{color:var(--ink-soft); font-size:.96rem;}
+  .syntax-line{
+    display:flex; align-items:baseline; gap:.6rem; margin:.7rem 0 1rem;
+    font-size:.86rem; flex-wrap:wrap;
+  }
+  .syntax-line .tag{color:var(--ink-soft); font-family:var(--font-mono); flex-shrink:0;}
+  .syntax-line code{
+    background:var(--bg-soft); padding:.28rem .55rem; border-radius:5px;
+    font-size:.86rem; color:var(--ink); overflow-x:auto;
+  }
+  .query-block{background:var(--term-bg); border-radius:8px; overflow:hidden;}
+  .query-block-head{
+    display:flex; align-items:center; gap:.5rem; padding:.5rem .7rem;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .query-block-head .tag{
+    font-family:var(--font-mono); font-size:.76rem; color:var(--term-amber); margin-right:auto;
+  }
+  .query-block textarea{
+    width:100%; display:block; background:var(--term-bg); color:var(--term-ink);
+    font-family:var(--font-mono); font-size:.92rem; border:none; resize:vertical;
+    padding:.8rem .9rem; min-height:3.4em;
+  }
+  .query-block textarea:focus{outline:2px solid var(--term-amber); outline-offset:-2px;}
+  .btn{
+    font-family:var(--font-body); font-weight:600; font-size:.84rem; cursor:pointer;
+    border:none; border-radius:6px; padding:.4rem .8rem; transition:transform .1s, filter .15s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .btn-run{background:var(--term-amber); color:#241804;}
+  .btn-run:hover{filter:brightness(1.08);}
+  .btn-reset{background:transparent; color:var(--term-ink); opacity:.7; padding:.4rem .55rem;}
+  .btn-reset:hover{opacity:1;}
+  .results{padding:.15rem .9rem .9rem;}
+  .table-wrap{overflow-x:auto; max-width:100%; border-radius:6px;}
+  table.result-table{border-collapse:collapse; width:100%; font-family:var(--font-mono); font-size:.85rem;}
+  table.result-table th, table.result-table td{
+    padding:.4rem .6rem; text-align:left; white-space:nowrap; border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  table.result-table th{color:var(--term-amber); font-weight:500;}
+  table.result-table td{color:var(--term-ink);}
+  table.result-table tr:hover td{background:rgba(255,255,255,0.04);}
+  .row-count{font-family:var(--font-mono); font-size:.78rem; color:rgba(220,239,224,0.55); margin:.5rem 0 0;}
+  .error-msg{color:#ff9d85; font-family:var(--font-mono); font-size:.85rem; margin:.3rem 0 0;}
+  .info-msg{color:rgba(220,239,224,0.6); font-family:var(--font-mono); font-size:.85rem; margin:.3rem 0 0;}
+
+  /* ---------- playground ---------- */
+  .pg-grid{display:grid; grid-template-columns:1fr; gap:1.6rem; margin-top:1.6rem;}
+  @media (min-width:860px){ .pg-grid{grid-template-columns:280px 1fr;} }
+  .pg-side{display:flex; flex-direction:column; gap:1rem;}
+  .schema-ref{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:.9rem 1rem;}
+  .schema-ref h4{margin:0 0 .5rem; font-size:.95rem;}
+  .schema-ref .row{font-family:var(--font-mono); font-size:.8rem; margin-bottom:.45rem; color:var(--ink-soft);}
+  .schema-ref .row b{color:var(--ink); font-weight:600;}
+  .data-tabs{display:flex; gap:.3rem; margin-bottom:.6rem;}
+  .data-tabs button{
+    background:var(--bg-soft); color:var(--ink-soft); border:1px solid var(--line);
+    border-radius:6px; padding:.32rem .6rem; font-size:.78rem; font-family:var(--font-mono); cursor:pointer;
+  }
+  .data-tabs button.active{background:var(--accent); color:var(--accent-ink); border-color:transparent;}
+  .data-browser{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:.9rem; max-height:260px; overflow:auto;}
+  .data-browser table{border-collapse:collapse; width:100%; font-family:var(--font-mono); font-size:.76rem;}
+  .data-browser th, .data-browser td{padding:.28rem .45rem; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap;}
+  .data-browser th{color:var(--ink-soft); position:sticky; top:0; background:var(--surface);}
+
+  .console-panel{background:var(--term-bg); border-radius:10px; overflow:hidden;}
+  .console-head{
+    display:flex; align-items:center; gap:.5rem; padding:.6rem .9rem;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .console-dots{display:flex; gap:.35rem;}
+  .console-dots span{width:.6rem; height:.6rem; border-radius:50%; background:rgba(255,255,255,0.18);}
+  .console-title{font-family:var(--font-mono); font-size:.8rem; color:var(--term-amber); margin-right:auto;}
+  #pg-console{
+    width:100%; min-height:9em; background:var(--term-bg); color:var(--term-ink);
+    font-family:var(--font-mono); font-size:.95rem; border:none; padding:1rem 1.1rem; resize:vertical;
+  }
+  #pg-console:focus{outline:2px solid var(--term-amber); outline-offset:-2px;}
+  .console-actions{display:flex; align-items:center; gap:.6rem; padding:.7rem .9rem 1rem; flex-wrap:wrap;}
+  .console-hint{font-family:var(--font-mono); font-size:.75rem; color:rgba(220,239,224,0.45); margin-left:auto;}
+  .quick-chips{display:flex; flex-wrap:wrap; gap:.4rem; padding:0 .9rem .9rem;}
+  .quick-chips button{
+    background:rgba(255,255,255,0.06); color:var(--term-ink); border:1px solid rgba(255,255,255,0.12);
+    border-radius:999px; padding:.28rem .68rem; font-size:.75rem; font-family:var(--font-mono); cursor:pointer;
+  }
+  .quick-chips button:hover{background:rgba(255,255,255,0.12);}
+  #pg-results{padding:0 .9rem 1.1rem;}
+
+  .challenges{margin-top:1.8rem;}
+  .challenge{
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:1rem 1.1rem; margin-bottom:.8rem;
+  }
+  .challenge h4{margin:0 0 .3rem; font-size:1rem;}
+  .challenge .hint{font-size:.86rem; color:var(--ink-soft); margin-bottom:.7rem;}
+  .challenge-actions{display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;}
+  .btn-check{background:var(--accent2); color:var(--accent2-ink);}
+  .btn-reveal{background:transparent; color:var(--ink-soft); box-shadow:inset 0 0 0 1px var(--line);}
+  .challenge-feedback{font-family:var(--font-mono); font-size:.84rem; margin:0;}
+  .challenge-feedback.good{color:var(--good);}
+  .challenge-feedback.bad{color:var(--danger);}
+  .reveal-box{
+    display:none; margin-top:.7rem; background:var(--bg-soft); border-radius:6px;
+    padding:.6rem .8rem; font-family:var(--font-mono); font-size:.82rem; white-space:pre-wrap;
+  }
+  .reveal-box.shown{display:block;}
+
+  .pg-toolbar{display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.6rem;}
+  .btn-reset-data{background:transparent; color:var(--danger); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent); padding:.35rem .7rem; font-size:.8rem;}
+
+  .engine-banner{
+    display:none; background:var(--danger); color:#2b0d06; padding:.6rem 1rem; border-radius:8px;
+    font-size:.88rem; margin:1rem 1.1rem 0; max-width:1080px; margin-left:auto; margin-right:auto;
+  }
+  .engine-banner.shown{display:block;}
+
+  .step-note{
+    display:inline-flex; align-items:center; gap:.5rem; font-family:var(--font-mono); font-size:.8rem;
+    color:var(--ink-soft); background:var(--bg-soft); padding:.4rem .75rem; border-radius:999px; margin-bottom:1.2rem;
+  }
+
+  footer{max-width:1080px; margin:0 auto; padding:2rem 1.1rem 3rem; color:var(--ink-soft); font-size:.85rem;}
+</style>
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="brand-mark">☕</span> Order Up: SQL Starter</div>
+    <nav class="nav-links" id="nav-links">
+      <button type="button" data-tab="welcome">Welcome</button>
+      <button type="button" data-tab="first-query">First Query</button>
+      <button type="button" data-tab="basics">Basics</button>
+      <button type="button" data-tab="numbers">Numbers</button>
+      <button type="button" data-tab="joins-easy">Easy Joins</button>
+      <button type="button" data-tab="joins-complex">Bigger Joins</button>
+      <button type="button" data-tab="playground">Playground</button>
+    </nav>
+  </div>
+</header>
+
+<div class="engine-banner" id="engine-banner">The live SQL engine couldn't load — check your connection and reload the page. Everything below will still read fine, just without the live "Run" buttons.</div>
+
+<main>
+
+  <!-- ======================= WELCOME ======================= -->
+  <div id="tab-welcome" class="tab-panel">
+    <h1>Order up. Let's learn SQL.</h1>
+    <p class="hero-sub">SQL is just a way of asking a database questions. Everything on this page runs for real, right in your browser, against a small made-up coffee chain called <strong>StarBean</strong>. Nothing to install, nothing you can break — every box with a dark background is a live console you can edit and re-run.</p>
+
+    <h2 style="margin-top:2.2rem;">Three tables, one coffee chain</h2>
+    <p class="measure" style="color:var(--ink-soft);">Think of each table below as its own spreadsheet tab. They're kept separate so information isn't repeated everywhere — a store's name lives in one place, not copied onto every order. In the Joins chapters you'll learn how to stitch them back together.</p>
+    <div class="schema-tour" id="schema-tour"></div>
+
+    <p class="measure" style="margin-top:2rem; color:var(--ink-soft);">This starter is split into short stops rather than one long scroll — use the tabs above, in order, or jump straight to whichever bit you need: Basics, then Numbers, then two Joins chapters graded easy and trickier, then a Playground with nothing filled in for you.</p>
+  </div>
+
+  <!-- ======================= FIRST QUERY ======================= -->
+  <div id="tab-first-query" class="tab-panel">
+    <span class="chapter-kicker chapter-basics">say hello to the console</span>
+    <h2>Your first query</h2>
+    <p class="measure" style="color:var(--ink-soft);">Most of what you'll eventually write is a variation on the shape below. Each part does one job — you don't need to remember all four yet, this is just the destination:</p>
+    <div class="anatomy">
+      <div class="anatomy-query"><span class="clause c-select">SELECT name, drink</span> <span class="clause c-from">FROM orders</span> <span class="clause c-where">WHERE size = 'Large'</span> <span class="clause c-order">ORDER BY price DESC</span>;</div>
+      <div class="anatomy-legend">
+        <span><span class="dot" style="background:var(--accent);"></span>SELECT — which columns you want back</span>
+        <span><span class="dot" style="background:var(--accent2);"></span>FROM — which table to pull them from</span>
+        <span><span class="dot" style="background:var(--accent3);"></span>WHERE — which rows qualify</span>
+        <span><span class="dot" style="background:var(--accent);"></span>ORDER BY — what order to hand them back in</span>
+      </div>
+    </div>
+    <p class="measure" style="margin-top:1.6rem; color:var(--ink-soft);">For now, forget WHERE and ORDER BY entirely. The smallest complete query there is only needs two of those four words:</p>
+    <div class="lesson-grid" id="first-query-grid"></div>
+    <p class="measure" style="color:var(--ink-soft);">Change <code>stores</code> to <code>employees</code> or <code>orders</code> above and press Run again — that's the whole loop you'll use for everything else on this page.</p>
+  </div>
+
+  <!-- ======================= BASICS ======================= -->
+  <div id="tab-basics" class="tab-panel">
+    <span class="chapter-kicker chapter-basics">basic commands</span>
+    <h2>Getting the rows you want</h2>
+    <p class="measure" style="color:var(--ink-soft);">The everyday moves: choosing columns, filtering rows, and putting things in order.</p>
+    <div class="lesson-grid" id="basics-grid"></div>
+  </div>
+
+  <!-- ======================= NUMBERS ======================= -->
+  <div id="tab-numbers" class="tab-panel">
+    <span class="chapter-kicker chapter-numbers">numerical commands</span>
+    <h2>Counting, totalling, averaging</h2>
+    <p class="measure" style="color:var(--ink-soft);">Once you can find rows, the next question is usually "so how many / how much / on average?" — that's what this chapter covers.</p>
+    <div class="lesson-grid" id="numbers-grid"></div>
+  </div>
+
+  <!-- ======================= JOINS: EASY ======================= -->
+  <div id="tab-joins-easy" class="tab-panel">
+    <span class="chapter-kicker chapter-joins">joins · the easy pair</span>
+    <h2>Bringing two tables together</h2>
+    <p class="measure" style="color:var(--ink-soft);">Real questions rarely stay inside one table. This chapter covers just the one move you'll use constantly: matching two tables on a shared key.</p>
+    <div class="lesson-grid" id="joins-easy-grid"></div>
+    <p class="step-note">→ comfortable with these two? Bigger Joins picks up right where this leaves off.</p>
+  </div>
+
+  <!-- ======================= JOINS: COMPLEX ======================= -->
+  <div id="tab-joins-complex" class="tab-panel">
+    <span class="chapter-kicker chapter-joins">joins · levelling up</span>
+    <h2>Joins with a bit more going on</h2>
+    <p class="measure" style="color:var(--ink-soft);">Same idea as before, stretched a little further: joining three tables in one go, keeping rows that don't have a match, and combining a join with GROUP BY. Take these one at a time — there's no rush.</p>
+    <div class="lesson-grid" id="joins-complex-grid"></div>
+  </div>
+
+  <!-- ======================= PLAYGROUND ======================= -->
+  <div id="tab-playground" class="tab-panel">
+    <h2>The Playground</h2>
+    <p class="measure" style="color:var(--ink-soft);">Nothing pre-filled. Write a real query against the same three tables, run it, and see what comes back. The reference below reminds you what's available.</p>
+
+    <div class="pg-grid">
+      <div class="pg-side">
+        <div class="schema-ref">
+          <h4>Tables &amp; columns</h4>
+          <div class="row"><b>stores</b>(store_id, store_name, city, region)</div>
+          <div class="row"><b>employees</b>(employee_id, name, role, store_id, hourly_pay, hire_year)</div>
+          <div class="row"><b>orders</b>(order_id, employee_id, customer_name, drink, size, price, quantity, order_date)</div>
+        </div>
+        <div>
+          <div class="data-tabs" id="data-tabs">
+            <button data-table="stores" class="active">stores</button>
+            <button data-table="employees">employees</button>
+            <button data-table="orders">orders</button>
+          </div>
+          <div class="data-browser" id="data-browser"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="pg-toolbar">
+          <span style="font-size:.85rem; color:var(--ink-soft);">Your console — write anything, run it, break nothing.</span>
+          <button class="btn btn-reset-data" id="btn-reset-data">↺ Reset sample data</button>
+        </div>
+        <div class="console-panel">
+          <div class="console-head">
+            <div class="console-dots"><span></span><span></span><span></span></div>
+            <span class="console-title">sql console</span>
+          </div>
+          <textarea id="pg-console" spellcheck="false">SELECT * FROM orders;</textarea>
+          <div class="console-actions">
+            <button class="btn btn-run" id="pg-run">Run ▸</button>
+            <span class="console-hint">⌘/Ctrl + Enter also runs it</span>
+          </div>
+          <div class="quick-chips" id="quick-chips"></div>
+          <div id="pg-results"></div>
+        </div>
+
+        <div class="challenges" id="challenges">
+          <h3 style="margin-top:1.8rem;">Order tickets</h3>
+          <p style="color:var(--ink-soft); font-size:.92rem; margin-top:-.4rem;">Write your attempt in the console above, then check it against each ticket below.</p>
+          <div id="challenges-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>Built for practice, not production — StarBean isn't a real coffee chain, but the SQL is 100% real. Every query above runs with <a href="https://github.com/alasql/alasql" target="_blank" rel="noopener">AlaSQL</a>, a SQL engine that works entirely inside your browser.</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/alasql@4.19.1"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // Sample data
+  // ---------------------------------------------------------------
+  var ORIGINAL_DATA = {
+    stores: [
+      {store_id:1, store_name:"StarBean Camden", city:"London", region:"South"},
+      {store_id:2, store_name:"StarBean Northern Quarter", city:"Manchester", region:"North"},
+      {store_id:3, store_name:"StarBean Ouseburn", city:"Newcastle", region:"North"},
+      {store_id:4, store_name:"StarBean Merchant City", city:"Glasgow", region:"Scotland"}
+    ],
+    employees: [
+      {employee_id:101, name:"Priya Shah", role:"Store Manager", store_id:1, hourly_pay:14.50, hire_year:2019},
+      {employee_id:102, name:"Tom Ellery", role:"Barista", store_id:1, hourly_pay:11.20, hire_year:2023},
+      {employee_id:103, name:"Nadia Osei", role:"Shift Lead", store_id:1, hourly_pay:12.75, hire_year:2021},
+      {employee_id:104, name:"Callum Reid", role:"Barista", store_id:2, hourly_pay:11.20, hire_year:2022},
+      {employee_id:105, name:"Freya Lindqvist", role:"Store Manager", store_id:2, hourly_pay:14.50, hire_year:2018},
+      {employee_id:106, name:"Ben Okafor", role:"Barista", store_id:3, hourly_pay:11.00, hire_year:2024},
+      {employee_id:107, name:"Grace Muldoon", role:"Shift Lead", store_id:3, hourly_pay:12.75, hire_year:2020},
+      {employee_id:108, name:"Aiden Carter", role:"Store Manager", store_id:4, hourly_pay:14.75, hire_year:2017},
+      {employee_id:109, name:"Isla Fraser", role:"Barista", store_id:4, hourly_pay:11.10, hire_year:2025}
+    ],
+    orders: [
+      {order_id:1, employee_id:101, customer_name:"Meera Chandra", drink:"Flat White", size:"Regular", price:3.20, quantity:1, order_date:"2026-09-01"},
+      {order_id:2, employee_id:102, customer_name:"Liam Foster", drink:"Latte", size:"Large", price:3.80, quantity:2, order_date:"2026-09-01"},
+      {order_id:3, employee_id:103, customer_name:"Sophie Marsh", drink:"Cappuccino", size:"Regular", price:3.40, quantity:1, order_date:"2026-09-01"},
+      {order_id:4, employee_id:101, customer_name:"Ollie Grant", drink:"Americano", size:"Small", price:2.60, quantity:1, order_date:"2026-09-02"},
+      {order_id:5, employee_id:104, customer_name:"Ruby Sinclair", drink:"Mocha", size:"Large", price:4.10, quantity:1, order_date:"2026-09-02"},
+      {order_id:6, employee_id:105, customer_name:"Harry Doyle", drink:"Espresso", size:"Small", price:2.20, quantity:2, order_date:"2026-09-02"},
+      {order_id:7, employee_id:102, customer_name:"Ella Whitfield", drink:"Flat White", size:"Large", price:3.90, quantity:1, order_date:"2026-09-03"},
+      {order_id:8, employee_id:106, customer_name:"Jack Bowman", drink:"Iced Latte", size:"Regular", price:3.60, quantity:3, order_date:"2026-09-03"},
+      {order_id:9, employee_id:107, customer_name:"Amelia Clarke", drink:"Hot Chocolate", size:"Regular", price:3.30, quantity:1, order_date:"2026-09-03"},
+      {order_id:10, employee_id:103, customer_name:"Noah Pearson", drink:"Latte", size:"Regular", price:3.50, quantity:2, order_date:"2026-09-04"},
+      {order_id:11, employee_id:108, customer_name:"Chloe Bennett", drink:"Cappuccino", size:"Large", price:3.90, quantity:1, order_date:"2026-09-04"},
+      {order_id:12, employee_id:104, customer_name:"George Hale", drink:"Americano", size:"Regular", price:2.90, quantity:1, order_date:"2026-09-04"},
+      {order_id:13, employee_id:101, customer_name:"Isabelle Ford", drink:"Flat White", size:"Regular", price:3.20, quantity:1, order_date:"2026-09-05"},
+      {order_id:14, employee_id:105, customer_name:"Max Thornton", drink:"Mocha", size:"Regular", price:3.80, quantity:2, order_date:"2026-09-05"},
+      {order_id:15, employee_id:106, customer_name:"Lily Chapman", drink:"Espresso", size:"Small", price:2.20, quantity:1, order_date:"2026-09-05"},
+      {order_id:16, employee_id:107, customer_name:"Finn Osborne", drink:"Iced Latte", size:"Large", price:4.00, quantity:1, order_date:"2026-09-06"},
+      {order_id:17, employee_id:102, customer_name:"Zara Hutton", drink:"Latte", size:"Small", price:3.10, quantity:1, order_date:"2026-09-06"},
+      {order_id:18, employee_id:108, customer_name:"Daniel Voss", drink:"Hot Chocolate", size:"Large", price:3.90, quantity:2, order_date:"2026-09-06"},
+      {order_id:19, employee_id:103, customer_name:"Poppy Yardley", drink:"Flat White", size:"Large", price:3.90, quantity:1, order_date:"2026-09-07"},
+      {order_id:20, employee_id:104, customer_name:"Leo Frampton", drink:"Cappuccino", size:"Regular", price:3.40, quantity:1, order_date:"2026-09-07"},
+      {order_id:21, employee_id:105, customer_name:"Freya Nolan", drink:"Americano", size:"Small", price:2.60, quantity:3, order_date:"2026-09-07"},
+      {order_id:22, employee_id:106, customer_name:"Archie Westbrook", drink:"Mocha", size:"Large", price:4.10, quantity:1, order_date:"2026-09-08"},
+      {order_id:23, employee_id:107, customer_name:"Evie Sanderson", drink:"Espresso", size:"Regular", price:2.60, quantity:2, order_date:"2026-09-08"},
+      {order_id:24, employee_id:108, customer_name:"Toby Lindgren", drink:"Iced Latte", size:"Regular", price:3.60, quantity:1, order_date:"2026-09-08"},
+      {order_id:25, employee_id:101, customer_name:"Millie Ashcombe", drink:"Latte", size:"Large", price:3.80, quantity:2, order_date:"2026-09-09"},
+      {order_id:26, employee_id:102, customer_name:"Rowan Blackwood", drink:"Flat White", size:"Regular", price:3.20, quantity:1, order_date:"2026-09-09"}
+    ]
+  };
+
+  var ENGINE_OK = (typeof window.alasql !== "undefined");
+  if(!ENGINE_OK){
+    document.getElementById("engine-banner").classList.add("shown");
+  }
+
+  function loadTables(){
+    if(!ENGINE_OK) return;
+    Object.keys(ORIGINAL_DATA).forEach(function(name){
+      alasql.tables[name] = { data: JSON.parse(JSON.stringify(ORIGINAL_DATA[name])) };
+    });
+  }
+  loadTables();
+
+  // ---------------------------------------------------------------
+  // Query running + rendering helpers
+  // ---------------------------------------------------------------
+  function safeRun(sql, opts){
+    opts = opts || {};
+    var restrict = opts.restrictSelect !== false;
+    var trimmed = (sql || "").trim();
+    if(!ENGINE_OK) return {ok:false, error:"The SQL engine isn't loaded right now."};
+    if(!trimmed) return {ok:false, error:"Type a query first."};
+    if(restrict && !/^select/i.test(trimmed)){
+      return {ok:false, error:"This box is for SELECT queries — head to the Playground console to try other commands."};
+    }
+    try{
+      var rows = alasql(trimmed);
+      return {ok:true, rows:rows};
+    }catch(err){
+      return {ok:false, error: (err && err.message) ? err.message : String(err)};
+    }
+  }
+
+  function renderResults(container, res, opts){
+    opts = opts || {};
+    container.innerHTML = "";
+    if(!res.ok){
+      var perr = document.createElement("p");
+      perr.className = "error-msg";
+      perr.textContent = "⚠ " + res.error;
+      container.appendChild(perr);
+      return;
+    }
+    var rows = res.rows;
+    if(!Array.isArray(rows)){
+      var pinfo = document.createElement("p");
+      pinfo.className = "info-msg";
+      pinfo.textContent = "Done.";
+      container.appendChild(pinfo);
+      return;
+    }
+    if(rows.length === 0){
+      var pempty = document.createElement("p");
+      pempty.className = "info-msg";
+      pempty.textContent = "No rows found.";
+      container.appendChild(pempty);
+      return;
+    }
+    var maxRows = opts.maxRows || 200;
+    var cols = Object.keys(rows[0]);
+    var wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    var table = document.createElement("table");
+    table.className = "result-table";
+    var thead = document.createElement("thead");
+    var htr = document.createElement("tr");
+    cols.forEach(function(c){ var th=document.createElement("th"); th.textContent=c; htr.appendChild(th); });
+    thead.appendChild(htr); table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    rows.slice(0, maxRows).forEach(function(r){
+      var tr = document.createElement("tr");
+      cols.forEach(function(c){
+        var td = document.createElement("td");
+        var v = r[c];
+        td.textContent = (v === null || v === undefined) ? "—" : String(v);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    container.appendChild(wrap);
+    var count = document.createElement("p");
+    count.className = "row-count";
+    count.textContent = rows.length + (rows.length === 1 ? " row" : " rows") + (rows.length > maxRows ? " (showing first " + maxRows + ")" : "");
+    container.appendChild(count);
+  }
+
+  // ---------------------------------------------------------------
+  // Lesson card builder
+  // ---------------------------------------------------------------
+  function buildLessonCard(lesson){
+    var card = document.createElement("article");
+    card.className = "lesson-card";
+    card.innerHTML =
+      '<h3></h3>' +
+      '<p class="blurb"></p>' +
+      '<div class="syntax-line"><span class="tag">syntax</span><code></code></div>' +
+      '<div class="query-block">' +
+        '<div class="query-block-head"><span class="tag">try it</span>' +
+          '<button type="button" class="btn btn-reset" title="Restore example">↺ reset</button>' +
+          '<button type="button" class="btn btn-run">Run ▸</button>' +
+        '</div>' +
+        '<textarea spellcheck="false" rows="3"></textarea>' +
+        '<div class="results"></div>' +
+      '</div>';
+    card.querySelector("h3").textContent = lesson.title;
+    card.querySelector(".blurb").textContent = lesson.blurb;
+    card.querySelector(".syntax-line code").textContent = lesson.syntax;
+    var textarea = card.querySelector("textarea");
+    textarea.value = lesson.query;
+    var resultsDiv = card.querySelector(".results");
+    function run(){
+      renderResults(resultsDiv, safeRun(textarea.value));
+    }
+    card.querySelector(".btn-run").addEventListener("click", run);
+    card.querySelector(".btn-reset").addEventListener("click", function(){
+      textarea.value = lesson.query;
+      run();
+    });
+    textarea.addEventListener("keydown", function(e){
+      if((e.metaKey || e.ctrlKey) && e.key === "Enter"){ e.preventDefault(); run(); }
+    });
+    run();
+    return card;
+  }
+
+  // ---------------------------------------------------------------
+  // Lesson content
+  // ---------------------------------------------------------------
+  var FIRST_QUERY = [
+    {title:"Your first statement", blurb:"SELECT * FROM table_name means \u201cshow me every column, from this table.\u201d It's the smallest complete query there is.",
+      syntax:"SELECT * FROM table_name;", query:"SELECT * FROM stores;"}
+  ];
+
+  var BASICS = [
+    {title:"Pick specific columns", blurb:"Name only the columns you actually need, separated by commas \u2014 far easier to read than scrolling past everything.",
+      syntax:"SELECT col1, col2 FROM table_name;", query:"SELECT name, role, hourly_pay FROM employees;"},
+    {title:"Filter rows with WHERE", blurb:"WHERE keeps only the rows that match a condition. Use =, >, <, >=, <= or != to compare.",
+      syntax:"SELECT ... FROM ... WHERE condition;", query:"SELECT drink, price FROM orders WHERE price > 3.5;"},
+    {title:"Combine conditions", blurb:"Stack conditions with AND (both must be true) or OR (either can be true).",
+      syntax:"... WHERE condition1 AND condition2;", query:"SELECT customer_name, drink, size FROM orders WHERE size = 'Large' AND price < 4;"},
+    {title:"Sort with ORDER BY", blurb:"ORDER BY sorts your results. Add DESC for highest-to-lowest; leave it off (or add ASC) for lowest-to-highest.",
+      syntax:"... ORDER BY column DESC;", query:"SELECT drink, price FROM orders ORDER BY price DESC;"},
+    {title:"Just the top few, with LIMIT", blurb:"LIMIT caps how many rows come back \u2014 perfect for \u201cshow me the top 5.\u201d",
+      syntax:"... LIMIT number;", query:"SELECT drink, price FROM orders ORDER BY price DESC LIMIT 5;"},
+    {title:"Match patterns: LIKE, IN, BETWEEN", blurb:"LIKE searches for a pattern (% stands in for \u201canything\u201d). IN checks against a list. BETWEEN checks a range, inclusive.",
+      syntax:"WHERE col LIKE '%text%'  /  WHERE col IN (a,b)  /  WHERE col BETWEEN a AND b", query:"SELECT drink, size, price FROM orders WHERE drink LIKE '%Latte%' AND price BETWEEN 3 AND 4;"},
+    {title:"Remove duplicates with DISTINCT", blurb:"DISTINCT gives you each unique value only once \u2014 handy for \u201cwhat drinks do we even sell?\u201d without every repeat.",
+      syntax:"SELECT DISTINCT column FROM table;", query:"SELECT DISTINCT drink FROM orders;"}
+  ];
+
+  var NUMBERS = [
+    {title:"Count rows with COUNT", blurb:"COUNT(*) tells you how many rows matched \u2014 great for \u201chow many orders today?\u201d",
+      syntax:"SELECT COUNT(*) FROM table;", query:"SELECT COUNT(*) AS total_orders FROM orders;"},
+    {title:"Add up a column with SUM", blurb:"SUM totals a numeric column across every matching row. Multiplying price by quantity first gives you the real order value.",
+      syntax:"SELECT SUM(column) FROM table;", query:"SELECT SUM(price * quantity) AS total_takings FROM orders;"},
+    {title:"Find the average with AVG", blurb:"AVG works out the mean. Wrap it in ROUND(..., 2) to tidy up the decimal places.",
+      syntax:"SELECT ROUND(AVG(column), 2) FROM table;", query:"SELECT ROUND(AVG(price), 2) AS avg_price FROM orders;"},
+    {title:"Highest and lowest with MIN / MAX", blurb:"MIN and MAX find the smallest and largest values in a column.",
+      syntax:"SELECT MIN(column), MAX(column) FROM table;", query:"SELECT MIN(price) AS cheapest, MAX(price) AS priciest FROM orders;"},
+    {title:"Group rows with GROUP BY", blurb:"GROUP BY buckets rows that share a value, so COUNT / SUM / AVG calculate per group instead of across everything at once.",
+      syntax:"SELECT column, COUNT(*) FROM table GROUP BY column;", query:"SELECT drink, COUNT(*) AS times_ordered FROM orders GROUP BY drink ORDER BY times_ordered DESC;"},
+    {title:"Filter groups with HAVING", blurb:"WHERE filters rows before grouping; HAVING filters the finished groups \u2014 for example, \u201conly drinks ordered more than twice.\u201d",
+      syntax:"... GROUP BY column HAVING condition;", query:"SELECT drink, COUNT(*) AS times_ordered FROM orders GROUP BY drink HAVING COUNT(*) > 2;"},
+    {title:"Do the maths in SELECT", blurb:"You can add, subtract, multiply or divide columns right inside SELECT \u2014 here we work out each order's total value.",
+      syntax:"SELECT column * column AS alias FROM table;", query:"SELECT customer_name, drink, price, quantity, price * quantity AS order_total FROM orders ORDER BY order_total DESC LIMIT 5;"}
+  ];
+
+  var JOINS_EASY = [
+    {title:"Why split data across tables?", blurb:"Keeping stores, employees and orders separate avoids repeating a store's name or an employee's pay rate on every single order row. Notice employees already carries a store_id \u2014 that's the thread a JOIN will pull.",
+      syntax:"(no join yet \u2014 just spotting the connector column)", query:"SELECT employee_id, name, store_id FROM employees;"},
+    {title:"Bring two tables together with JOIN", blurb:"An (INNER) JOIN matches rows between two tables where a key column is equal \u2014 here, each order's employee_id is matched to that employee's own employee_id. AS just gives each table a short nickname to refer to.",
+      syntax:"SELECT ... FROM a JOIN b ON a.key = b.key;", query:"SELECT o.order_id, e.name AS served_by, o.drink, o.price\nFROM orders AS o\nJOIN employees AS e ON o.employee_id = e.employee_id\nORDER BY o.order_id;"}
+  ];
+
+  var JOINS_COMPLEX = [
+    {title:"Chain multiple joins", blurb:"Join as many tables as you need, one ON clause per join \u2014 here we travel all the way from order, to employee, to store.",
+      syntax:"... FROM a JOIN b ON ... JOIN c ON ...;", query:"SELECT o.order_id, s.store_name, e.name AS served_by, o.drink\nFROM orders AS o\nJOIN employees AS e ON o.employee_id = e.employee_id\nJOIN stores AS s ON e.store_id = s.store_id\nORDER BY s.store_name;"},
+    {title:"Keep unmatched rows with LEFT JOIN", blurb:"LEFT JOIN keeps every row from the left-hand table even when there's no match on the right \u2014 perfect for finding employees who haven't served an order yet (their order columns come back empty).",
+      syntax:"SELECT ... FROM a LEFT JOIN b ON a.key = b.key;", query:"SELECT e.name, e.store_id, o.order_id\nFROM employees AS e\nLEFT JOIN orders AS o ON e.employee_id = o.employee_id\nWHERE o.order_id IS NULL;"},
+    {title:"Combine JOIN with GROUP BY", blurb:"Joins and aggregates work together beautifully \u2014 takings per store, even though \u201cstore\u201d is two tables away from \u201cprice.\u201d",
+      syntax:"SELECT ... FROM a JOIN b ... GROUP BY ...;", query:"SELECT s.store_name, ROUND(SUM(o.price * o.quantity), 2) AS takings\nFROM orders AS o\nJOIN employees AS e ON o.employee_id = e.employee_id\nJOIN stores AS s ON e.store_id = s.store_id\nGROUP BY s.store_name\nORDER BY takings DESC;"}
+  ];
+
+  function fillGrid(id, lessons){
+    var grid = document.getElementById(id);
+    lessons.forEach(function(lesson){ grid.appendChild(buildLessonCard(lesson)); });
+  }
+  fillGrid("first-query-grid", FIRST_QUERY);
+  fillGrid("basics-grid", BASICS);
+  fillGrid("numbers-grid", NUMBERS);
+  fillGrid("joins-easy-grid", JOINS_EASY);
+  fillGrid("joins-complex-grid", JOINS_COMPLEX);
+
+  // ---------------------------------------------------------------
+  // Welcome: schema tour cards
+  // ---------------------------------------------------------------
+  var SCHEMA_INFO = [
+    {name:"stores", purpose:"One row per coffee shop.", key:"store_id"},
+    {name:"employees", purpose:"One row per person, linked to the store they work at.", key:"employee_id"},
+    {name:"orders", purpose:"One row per coffee sold, linked to who served it.", key:"order_id"}
+  ];
+  (function buildSchemaTour(){
+    var tour = document.getElementById("schema-tour");
+    SCHEMA_INFO.forEach(function(info){
+      var data = ORIGINAL_DATA[info.name].slice(0,3);
+      var cols = Object.keys(data[0]);
+      var card = document.createElement("div");
+      card.className = "schema-card";
+      var head = document.createElement("h4"); head.textContent = info.name;
+      var purpose = document.createElement("div"); purpose.className = "schema-purpose"; purpose.textContent = info.purpose;
+      var table = document.createElement("table");
+      var thead = document.createElement("thead"); var htr = document.createElement("tr");
+      cols.forEach(function(c){ var th=document.createElement("th"); th.textContent=c; htr.appendChild(th); });
+      thead.appendChild(htr); table.appendChild(thead);
+      var tbody = document.createElement("tbody");
+      data.forEach(function(r){
+        var tr = document.createElement("tr");
+        cols.forEach(function(c){ var td=document.createElement("td"); td.textContent=r[c]; tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      card.appendChild(head); card.appendChild(purpose); card.appendChild(table);
+      tour.appendChild(card);
+    });
+  })();
+
+  // ---------------------------------------------------------------
+  // Playground: data browser
+  // ---------------------------------------------------------------
+  var dataBrowser = document.getElementById("data-browser");
+  function renderDataBrowser(tableName){
+    var rows = ENGINE_OK ? alasql("SELECT * FROM " + tableName) : ORIGINAL_DATA[tableName];
+    dataBrowser.innerHTML = "";
+    renderDataTable(dataBrowser, rows);
+  }
+  function renderDataTable(container, rows){
+    if(!rows || rows.length === 0){ container.textContent = "No rows."; return; }
+    var cols = Object.keys(rows[0]);
+    var table = document.createElement("table");
+    var thead = document.createElement("thead"); var htr = document.createElement("tr");
+    cols.forEach(function(c){ var th=document.createElement("th"); th.textContent=c; htr.appendChild(th); });
+    thead.appendChild(htr); table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    rows.forEach(function(r){
+      var tr = document.createElement("tr");
+      cols.forEach(function(c){ var td=document.createElement("td"); td.textContent=r[c]; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+  }
+  document.getElementById("data-tabs").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-table]");
+    if(!btn) return;
+    document.querySelectorAll("#data-tabs button").forEach(function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    renderDataBrowser(btn.getAttribute("data-table"));
+  });
+  renderDataBrowser("stores");
+
+  // ---------------------------------------------------------------
+  // Playground: console
+  // ---------------------------------------------------------------
+  var pgConsole = document.getElementById("pg-console");
+  var pgResults = document.getElementById("pg-results");
+  function runConsole(){
+    renderResults(pgResults, safeRun(pgConsole.value, {restrictSelect:false}), {maxRows:300});
+  }
+  document.getElementById("pg-run").addEventListener("click", runConsole);
+  pgConsole.addEventListener("keydown", function(e){
+    if((e.metaKey || e.ctrlKey) && e.key === "Enter"){ e.preventDefault(); runConsole(); }
+  });
+  runConsole();
+
+  var QUICK_CHIPS = [
+    "SELECT * FROM employees;",
+    "SELECT * FROM stores;",
+    "SELECT drink, COUNT(*) AS times_ordered FROM orders GROUP BY drink ORDER BY times_ordered DESC;",
+    "SELECT o.customer_name, e.name AS served_by FROM orders AS o JOIN employees AS e ON o.employee_id = e.employee_id;"
+  ];
+  (function buildChips(){
+    var wrap = document.getElementById("quick-chips");
+    QUICK_CHIPS.forEach(function(sql){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = sql.length > 46 ? sql.slice(0,44) + "\u2026" : sql;
+      btn.title = sql;
+      btn.addEventListener("click", function(){ pgConsole.value = sql; runConsole(); pgConsole.focus(); });
+      wrap.appendChild(btn);
+    });
+  })();
+
+  document.getElementById("btn-reset-data").addEventListener("click", function(){
+    loadTables();
+    var activeTab = document.querySelector("#data-tabs button.active");
+    renderDataBrowser(activeTab ? activeTab.getAttribute("data-table") : "stores");
+    runConsole();
+  });
+
+  // ---------------------------------------------------------------
+  // Playground: challenges
+  // ---------------------------------------------------------------
+  var CHALLENGES = [
+    {title:"Ticket 1 \u2014 A single day's orders", hint:"Every column, for every order placed on 2026-09-05.", ref:"SELECT * FROM orders WHERE order_date = '2026-09-05';"},
+    {title:"Ticket 2 \u2014 Pay league table", hint:"Each employee's name and hourly pay, highest pay first.", ref:"SELECT name, hourly_pay FROM employees ORDER BY hourly_pay DESC;"},
+    {title:"Ticket 3 \u2014 How many Larges?", hint:"How many orders were for a 'Large' size?", ref:"SELECT COUNT(*) AS total FROM orders WHERE size = 'Large';"},
+    {title:"Ticket 4 \u2014 Flat White takings", hint:"The total takings (price \u00d7 quantity) for Flat Whites only.", ref:"SELECT SUM(price * quantity) AS total FROM orders WHERE drink = 'Flat White';"},
+    {title:"Ticket 5 \u2014 Busiest store", hint:"How many orders each store's team has served, busiest first. You'll need two joins and a GROUP BY.", ref:"SELECT s.store_name, COUNT(*) AS orders FROM orders AS o JOIN employees AS e ON o.employee_id = e.employee_id JOIN stores AS s ON e.store_id = s.store_id GROUP BY s.store_name ORDER BY orders DESC;"},
+    {title:"Ticket 6 \u2014 Nobody served yet", hint:"Find any employee who hasn't served a single order yet.", ref:"SELECT e.name FROM employees AS e LEFT JOIN orders AS o ON e.employee_id = o.employee_id WHERE o.order_id IS NULL;"},
+    {title:"Ticket 7 \u2014 Biggest single order", hint:"The customer and value (price \u00d7 quantity) of the single highest-value order.", ref:"SELECT customer_name, price * quantity AS order_total FROM orders ORDER BY order_total DESC LIMIT 1;"}
+  ];
+
+  function canonicalizeValue(v){
+    if(v === null || v === undefined) return "null";
+    if(typeof v === "boolean") return "b:" + v;
+    var num = Number(v);
+    if(v !== "" && !isNaN(num)) return "n:" + (Math.round(num * 1000) / 1000);
+    return "s:" + String(v).trim().toLowerCase();
+  }
+  function canonicalRow(row){
+    return Object.keys(row).map(function(k){ return canonicalizeValue(row[k]); }).sort().join("|");
+  }
+  function canonicalResult(rows){
+    return rows.map(canonicalRow).sort();
+  }
+  function resultsMatch(a, b){
+    var ca = canonicalResult(a), cb = canonicalResult(b);
+    if(ca.length !== cb.length) return false;
+    for(var i=0;i<ca.length;i++){ if(ca[i] !== cb[i]) return false; }
+    return true;
+  }
+
+  function buildChallenge(ch){
+    var wrap = document.createElement("div");
+    wrap.className = "challenge";
+    wrap.innerHTML =
+      '<h4></h4>' +
+      '<p class="hint"></p>' +
+      '<div class="challenge-actions">' +
+        '<button type="button" class="btn btn-check">Check my order</button>' +
+        '<button type="button" class="btn btn-reveal">Reveal one answer</button>' +
+        '<p class="challenge-feedback"></p>' +
+      '</div>' +
+      '<pre class="reveal-box"></pre>';
+    wrap.querySelector("h4").textContent = ch.title;
+    wrap.querySelector(".hint").textContent = ch.hint;
+    var feedback = wrap.querySelector(".challenge-feedback");
+    var revealBox = wrap.querySelector(".reveal-box");
+    revealBox.textContent = ch.ref;
+
+    wrap.querySelector(".btn-check").addEventListener("click", function(){
+      var userRes = safeRun(pgConsole.value, {restrictSelect:false});
+      if(!userRes.ok){
+        feedback.textContent = "\u26a0 " + userRes.error;
+        feedback.className = "challenge-feedback bad";
+        return;
+      }
+      if(!Array.isArray(userRes.rows)){
+        feedback.textContent = "Run a SELECT query in the console above, then check again.";
+        feedback.className = "challenge-feedback bad";
+        return;
+      }
+      var refRows;
+      try{ refRows = alasql(ch.ref); } catch(e){ refRows = []; }
+      var match = resultsMatch(userRes.rows, refRows) && userRes.rows.length > 0;
+      if(match){
+        feedback.textContent = "\u2713 Order correct \u2014 nicely pulled.";
+        feedback.className = "challenge-feedback good";
+      } else {
+        feedback.textContent = "\u2717 Not quite the right rows yet \u2014 have another go, or reveal an answer.";
+        feedback.className = "challenge-feedback bad";
+      }
+    });
+    wrap.querySelector(".btn-reveal").addEventListener("click", function(){
+      revealBox.classList.toggle("shown");
+    });
+    return wrap;
+  }
+  (function buildChallenges(){
+    var list = document.getElementById("challenges-list");
+    CHALLENGES.forEach(function(ch){ list.appendChild(buildChallenge(ch)); });
+  })();
+
+  // ---------------------------------------------------------------
+  // Tab switching
+  // ---------------------------------------------------------------
+  var TAB_IDS = ["welcome","first-query","basics","numbers","joins-easy","joins-complex","playground"];
+  function showTab(id){
+    if(TAB_IDS.indexOf(id) === -1) id = "welcome";
+    TAB_IDS.forEach(function(t){
+      var panel = document.getElementById("tab-" + t);
+      if(panel) panel.classList.toggle("active", t === id);
+    });
+    document.querySelectorAll("#nav-links button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-tab") === id);
+    });
+    window.scrollTo(0,0);
+  }
+  document.getElementById("nav-links").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-tab]");
+    if(!btn) return;
+    var id = btn.getAttribute("data-tab");
+    showTab(id);
+    if(history.replaceState) history.replaceState(null, "", "#" + id);
+  });
+  var initial = (location.hash || "#welcome").slice(1);
+  showTab(initial);
+
+})();
+</script>
+</body>
+</html>
