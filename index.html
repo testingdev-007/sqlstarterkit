@@ -142,6 +142,7 @@
   .schema-card h4{font-family:var(--font-mono); font-size:1rem; margin:0 0 .15rem; color:var(--ink);}
   .schema-card .schema-purpose{font-size:.88rem; color:var(--ink-soft); margin-bottom:.7rem;}
   .schema-card table{width:100%; border-collapse:collapse; font-size:.82rem;}
+  .schema-table-wrap{overflow-x:auto; max-width:100%; -webkit-overflow-scrolling:touch;}
   .schema-card th, .schema-card td{
     text-align:left; padding:.32rem .4rem; border-bottom:1px solid var(--line);
     font-family:var(--font-mono); white-space:nowrap;
@@ -352,6 +353,7 @@
     <h2>Getting the rows you want</h2>
     <p class="measure" style="color:var(--ink-soft);">The everyday moves: choosing columns, filtering rows, and putting things in order.</p>
     <div class="lesson-grid" id="basics-grid"></div>
+    <div id="basics-practice"></div>
   </div>
 
   <!-- ======================= NUMBERS ======================= -->
@@ -360,6 +362,7 @@
     <h2>Counting, totalling, averaging</h2>
     <p class="measure" style="color:var(--ink-soft);">Once you can find rows, the next question is usually "so how many / how much / on average?" — that's what this chapter covers.</p>
     <div class="lesson-grid" id="numbers-grid"></div>
+    <div id="numbers-practice"></div>
   </div>
 
   <!-- ======================= JOINS: EASY ======================= -->
@@ -368,6 +371,7 @@
     <h2>Bringing two tables together</h2>
     <p class="measure" style="color:var(--ink-soft);">Real questions rarely stay inside one table. This chapter covers just the one move you'll use constantly: matching two tables on a shared key.</p>
     <div class="lesson-grid" id="joins-easy-grid"></div>
+    <div id="joins-easy-practice"></div>
     <p class="step-note">→ comfortable with these two? Bigger Joins picks up right where this leaves off.</p>
   </div>
 
@@ -377,6 +381,7 @@
     <h2>Joins with a bit more going on</h2>
     <p class="measure" style="color:var(--ink-soft);">Same idea as before, stretched a little further: joining three tables in one go, keeping rows that don't have a match, and combining a join with GROUP BY. Take these one at a time — there's no rush.</p>
     <div class="lesson-grid" id="joins-complex-grid"></div>
+    <div id="joins-complex-practice"></div>
   </div>
 
   <!-- ======================= PLAYGROUND ======================= -->
@@ -713,7 +718,11 @@
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      card.appendChild(head); card.appendChild(purpose); card.appendChild(table);
+      card.appendChild(head); card.appendChild(purpose);
+      var tableWrap = document.createElement("div");
+      tableWrap.className = "schema-table-wrap";
+      tableWrap.appendChild(table);
+      card.appendChild(tableWrap);
       tour.appendChild(card);
     });
   })();
@@ -797,8 +806,8 @@
   var CHALLENGES = [
     {title:"Ticket 1 \u2014 A single day's orders", hint:"Every column, for every order placed on 2026-09-05.", ref:"SELECT * FROM orders WHERE order_date = '2026-09-05';"},
     {title:"Ticket 2 \u2014 Pay league table", hint:"Each employee's name and hourly pay, highest pay first.", ref:"SELECT name, hourly_pay FROM employees ORDER BY hourly_pay DESC;"},
-    {title:"Ticket 3 \u2014 How many Larges?", hint:"How many orders were for a 'Large' size?", ref:"SELECT COUNT(*) AS total FROM orders WHERE size = 'Large';"},
-    {title:"Ticket 4 \u2014 Flat White takings", hint:"The total takings (price \u00d7 quantity) for Flat Whites only.", ref:"SELECT SUM(price * quantity) AS total FROM orders WHERE drink = 'Flat White';"},
+    {title:"Ticket 3 \u2014 How many Larges?", hint:"How many orders were for a 'Large' size?", ref:"SELECT COUNT(*) AS total_orders FROM orders WHERE size = 'Large';"},
+    {title:"Ticket 4 \u2014 Flat White takings", hint:"The total takings (price \u00d7 quantity) for Flat Whites only.", ref:"SELECT SUM(price * quantity) AS takings FROM orders WHERE drink = 'Flat White';"},
     {title:"Ticket 5 \u2014 Busiest store", hint:"How many orders each store's team has served, busiest first. You'll need two joins and a GROUP BY.", ref:"SELECT s.store_name, COUNT(*) AS orders FROM orders AS o JOIN employees AS e ON o.employee_id = e.employee_id JOIN stores AS s ON e.store_id = s.store_id GROUP BY s.store_name ORDER BY orders DESC;"},
     {title:"Ticket 6 \u2014 Nobody served yet", hint:"Find any employee who hasn't served a single order yet.", ref:"SELECT e.name FROM employees AS e LEFT JOIN orders AS o ON e.employee_id = o.employee_id WHERE o.order_id IS NULL;"},
     {title:"Ticket 7 \u2014 Biggest single order", hint:"The customer and value (price \u00d7 quantity) of the single highest-value order.", ref:"SELECT customer_name, price * quantity AS order_total FROM orders ORDER BY order_total DESC LIMIT 1;"}
@@ -824,7 +833,7 @@
     return true;
   }
 
-  function buildChallenge(ch){
+  function buildChallenge(ch, consoleTextarea){
     var wrap = document.createElement("div");
     wrap.className = "challenge";
     wrap.innerHTML =
@@ -843,7 +852,7 @@
     revealBox.textContent = ch.ref;
 
     wrap.querySelector(".btn-check").addEventListener("click", function(){
-      var userRes = safeRun(pgConsole.value, {restrictSelect:false});
+      var userRes = safeRun(consoleTextarea.value, {restrictSelect:false});
       if(!userRes.ok){
         feedback.textContent = "\u26a0 " + userRes.error;
         feedback.className = "challenge-feedback bad";
@@ -872,8 +881,82 @@
   }
   (function buildChallenges(){
     var list = document.getElementById("challenges-list");
-    CHALLENGES.forEach(function(ch){ list.appendChild(buildChallenge(ch)); });
+    CHALLENGES.forEach(function(ch){ list.appendChild(buildChallenge(ch, pgConsole)); });
   })();
+
+  // ---------------------------------------------------------------
+  // Per-chapter "Your turn" practice blocks (own mini console + tasks)
+  // ---------------------------------------------------------------
+  function buildPracticeBlock(containerId, tasks){
+    var container = document.getElementById(containerId);
+    if(!container) return;
+
+    var heading = document.createElement("h3");
+    heading.style.marginTop = "2.2rem";
+    heading.textContent = "Your turn";
+    container.appendChild(heading);
+
+    var lead = document.createElement("p");
+    lead.className = "measure";
+    lead.style.color = "var(--ink-soft)";
+    lead.style.marginTop = "-.4rem";
+    lead.textContent = "Nothing filled in this time \u2014 write your own query below, then check it against each prompt.";
+    container.appendChild(lead);
+
+    var panel = document.createElement("div");
+    panel.className = "query-block";
+    panel.innerHTML =
+      '<div class="query-block-head"><span class="tag">your console</span>' +
+        '<button type="button" class="btn btn-reset">\u21ba clear</button>' +
+        '<button type="button" class="btn btn-run">Run \u25b8</button>' +
+      '</div>' +
+      '<textarea spellcheck="false" rows="3" placeholder="Write a query here\u2026"></textarea>' +
+      '<div class="results"></div>';
+    container.appendChild(panel);
+
+    var textarea = panel.querySelector("textarea");
+    var resultsDiv = panel.querySelector(".results");
+    function run(){ renderResults(resultsDiv, safeRun(textarea.value, {restrictSelect:false})); }
+    panel.querySelector(".btn-run").addEventListener("click", run);
+    panel.querySelector(".btn-reset").addEventListener("click", function(){
+      textarea.value = "";
+      resultsDiv.innerHTML = "";
+    });
+    textarea.addEventListener("keydown", function(e){
+      if((e.metaKey || e.ctrlKey) && e.key === "Enter"){ e.preventDefault(); run(); }
+    });
+
+    var list = document.createElement("div");
+    list.className = "challenges";
+    tasks.forEach(function(t){ list.appendChild(buildChallenge(t, textarea)); });
+    container.appendChild(list);
+  }
+
+  var BASICS_TASKS = [
+    {title:"Under \u00a33", hint:"Show the drink and price for every order that costs less than \u00a33.", ref:"SELECT drink, price FROM orders WHERE price < 3;"},
+    {title:"A to Z staff list", hint:"Every employee's name and role, sorted alphabetically by name.", ref:"SELECT name, role FROM employees ORDER BY name;"},
+    {title:"Three cheapest", hint:"The drink and price of the 3 cheapest orders.", ref:"SELECT drink, price FROM orders ORDER BY price ASC LIMIT 3;"},
+    {title:"Which cities?", hint:"The different cities StarBean operates in, with no repeats.", ref:"SELECT DISTINCT city FROM stores;"}
+  ];
+  var NUMBERS_TASKS = [
+    {title:"How many baristas?", hint:"A count of employees whose role is 'Barista'.", ref:"SELECT COUNT(*) AS barista_count FROM employees WHERE role = 'Barista';"},
+    {title:"Average pay", hint:"The average hourly pay across all employees, rounded to 2 decimal places.", ref:"SELECT ROUND(AVG(hourly_pay), 2) AS avg_pay FROM employees;"},
+    {title:"Orders by size", hint:"How many orders were placed for each size, most common size first.", ref:"SELECT size, COUNT(*) AS order_count FROM orders GROUP BY size ORDER BY order_count DESC;"},
+    {title:"Priciest drink", hint:"The single highest price charged for any order.", ref:"SELECT MAX(price) AS most_expensive FROM orders;"}
+  ];
+  var JOINS_EASY_TASKS = [
+    {title:"Who served what", hint:"For every order, the drink and the name of the employee who served it.", ref:"SELECT o.drink, e.name FROM orders AS o JOIN employees AS e ON o.employee_id = e.employee_id;"},
+    {title:"Customer meets role", hint:"For every order, the customer_name and the role of the employee who served them.", ref:"SELECT o.customer_name, e.role FROM orders AS o JOIN employees AS e ON o.employee_id = e.employee_id;"}
+  ];
+  var JOINS_COMPLEX_TASKS = [
+    {title:"Order, all the way to city", hint:"For every order, the customer_name, drink, and the city of the store it was served from \u2014 that's a three-table chain.", ref:"SELECT o.customer_name, o.drink, s.city FROM orders AS o JOIN employees AS e ON o.employee_id = e.employee_id JOIN stores AS s ON e.store_id = s.store_id;"},
+    {title:"Drinks sold per store", hint:"The total quantity of drinks sold at each store.", ref:"SELECT s.store_name, SUM(o.quantity) AS total_quantity FROM orders AS o JOIN employees AS e ON o.employee_id = e.employee_id JOIN stores AS s ON e.store_id = s.store_id GROUP BY s.store_name;"}
+  ];
+
+  buildPracticeBlock("basics-practice", BASICS_TASKS);
+  buildPracticeBlock("numbers-practice", NUMBERS_TASKS);
+  buildPracticeBlock("joins-easy-practice", JOINS_EASY_TASKS);
+  buildPracticeBlock("joins-complex-practice", JOINS_COMPLEX_TASKS);
 
   // ---------------------------------------------------------------
   // Tab switching
